@@ -19,7 +19,7 @@ module OasRails
 
       def from_tags(tag:, examples_tags: [])
         if Utils.active_record_class?(tag.klass)
-          from_model_class(klass: tag.klass, description: tag.text, required: tag.required, examples_tags:)
+          from_model_class(klass: tag.klass, description: tag.text, required: tag.required, examples_tags: examples_tags)
         else
           @request_body.description = tag.text
           @request_body.content = ContentBuilder.new(@specification, :incoming).with_schema(tag.schema).with_examples_from_tags(examples_tags).build
@@ -54,7 +54,7 @@ module OasRails
       def detect_request_body(oas_route)
         return unless (klass = Utils.find_model_from_route(oas_route.controller))
 
-        from_model_class(klass:, required: true)
+        from_model_class(klass: klass, required: true)
       end
     end
   end

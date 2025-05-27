@@ -35,7 +35,7 @@ module OasRails
       def from_model_class(klass)
         return self unless Utils.active_record_class?(klass)
 
-        model_schema = Builders::EsquemaBuilder.send("build_#{@context}_schema", klass:)
+        model_schema = Builders::EsquemaBuilder.send("build_#{@context}_schema", klass: klass)
         model_schema["required"] = []
         schema = { type: "object", properties: { klass.to_s.downcase => model_schema } }
         examples = ActiveRecordExampleFinder.new(context: @context).search(klass)

@@ -73,12 +73,31 @@ module OasRails
 
       def tags
         method_comment = controller_class.constantize.instance_method(method).comment
-        class_comment = controller_class.constantize.instance_method(method).class_comment
+        class_comment = extract_class_comment(controller_class.constantize)
 
         method_tags = parse_tags(method_comment)
         class_tags = parse_tags(class_comment)
 
         method_tags + class_tags
+      end
+
+      def extract_class_comment(klass)
+        # Ruby 2.7 compatible way to get class comments
+        # Get the file path where the class is defined
+        file_path = klass.instance_method(method).source_location.first
+        return "" unless file_path && File.exist?(file_path)
+      
+        # Read the file and extract comments above the class definition
+        file_content = File.read(file_path)
+        class_name = klass.name.split("::").last
+        if (match = file_content.match(/^\s*#\s*(.*?)\s*class\s+#{class_name}/m))
+          match[1].to_s
+        else
+          ""
+        end
+      rescue StandardError => e
+        Rails.logger.warn("Failed to extract class comment: #{e.message}") if defined?(Rails) && Rails.logger
+        ""
       end
 
       def parse_tags(comment)

@@ -12,7 +12,7 @@ module OasRails
       def extract_tags(oas_route:)
         tags = oas_route.tags(:tags).first
         if tags.nil?
-          default_tags(oas_route:)
+          default_tags(oas_route: oas_route)
         else
           tags.text.split(",").map(&:strip).map(&:titleize)
         end

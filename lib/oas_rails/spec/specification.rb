@@ -30,7 +30,7 @@ module OasRails
       #
       # @return [void]
       def clear_cache
-        MethodSource.clear_cache
+        # MethodSource.clear_cache # is not available in Ruby 2.7
         Extractors::RouteExtractor.clear_cache
       end
 
