@@ -20,6 +20,8 @@ module OasRails
         # @param klass [Class] The class for which the schema is built.
         # @return [Hash] The schema as a JSON-compatible hash.
         def build_outgoing_schema(klass:, model_to_schema_class: EasyTalk)
+          return klass::API_HASH_SCHEMA if klass.const_defined?(:API_HASH_SCHEMA)
+
           build_schema(
             klass: klass,
             model_to_schema_class: model_to_schema_class,
