@@ -30,7 +30,15 @@ module OasRails
       #
       # @return [void]
       def clear_cache
-        # MethodSource.clear_cache # is not available in Ruby 2.7
+        if defined?(MethodSource)
+          if MethodSource.respond_to?(:clear_cache)
+            MethodSource.clear_cache
+          else
+            # Ruby 2.7 support
+            MethodSource.instance_variable_set(:@source_cache, {})
+          end
+        end
+
         Extractors::RouteExtractor.clear_cache
       end
 
