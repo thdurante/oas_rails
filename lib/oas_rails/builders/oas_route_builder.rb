@@ -57,6 +57,8 @@ module OasRails
 
       def source_string
         controller_class.constantize.instance_method(method).source
+      rescue ::MethodSource::SourceNotFoundError => _e
+        ''
       end
 
       def docstring
