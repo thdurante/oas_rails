@@ -4,20 +4,26 @@ module OasRails
   module Spec
     class Specification
       include Specable
-      attr_accessor :components, :info, :openapi, :servers, :tags, :external_docs, :paths
+      attr_accessor :components, :info, :openapi, :tags, :external_docs, :paths
+      attr_reader :request
 
       # Initializes a new Specification object.
       # Clears the cache if running in the development environment.
-      def initialize
+      def initialize(request: nil)
+        @request = request
         clear_cache unless Rails.env.production?
 
         @components = Components.new(self)
         @info = OasRails.config.info
         @openapi = '3.1.0'
-        @servers = OasRails.config.servers
         @tags = OasRails.config.tags
         @external_docs = {}
         @paths = Spec::Paths.new(self)
+      end
+
+      # Dynamic access to servers to allow lambda evaluation with request context
+      def servers
+        OasRails.config.servers(@request)
       end
 
       def build(route_extractor: Extractors::RouteExtractor)

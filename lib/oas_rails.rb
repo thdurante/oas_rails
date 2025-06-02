@@ -64,8 +64,8 @@ module OasRails
   end
 
   class << self
-    def build
-      oas = Spec::Specification.new
+    def build(request: nil)
+      oas = Spec::Specification.new(request: request)
       oas.build
 
       oas.to_spec

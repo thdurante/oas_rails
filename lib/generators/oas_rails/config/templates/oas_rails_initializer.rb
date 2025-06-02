@@ -44,7 +44,30 @@ OasRails.configure do |config|
   config.info.contact.url = 'https://a-chacon.com'
 
   # Servers Information. For more details follow: https://spec.openapis.org/oas/latest.html#server-object
+  # Static configuration: An array of server objects
   config.servers = [{ url: 'http://localhost:3000', description: 'Local' }]
+
+  # Dynamic configuration: Use a lambda/proc for runtime server definition
+  # Uncomment and modify the following example for dynamic servers based on environment:
+  #
+  # config.servers = -> {
+  #   if Rails.env.production?
+  #     [{ url: 'https://api.production.com', description: 'Production Server' }]
+  #   elsif Rails.env.staging?
+  #     [{ url: 'https://staging.api.com', description: 'Staging Server' }]
+  #   else
+  #     [{ url: 'http://localhost:3000', description: 'Development Server' }]
+  #   end
+  # }
+  #
+  # Request-aware configuration: Use request context for multi-tenant or dynamic routing
+  # config.servers = ->(request) {
+  #   if request && request.subdomain.present?
+  #     [{ url: "https://#{request.subdomain}.api.yourdomain.com", description: "#{request.subdomain.capitalize} API" }]
+  #   else
+  #     [{ url: 'https://api.yourdomain.com', description: 'Main API' }]
+  #   end
+  # }
 
   # Tag Information. For more details follow: https://spec.openapis.org/oas/latest.html#tag-object
   config.tags = [{ name: "Users", description: "Manage the `amazing` Users table." }]

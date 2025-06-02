@@ -24,7 +24,77 @@ Then fill it with your data. Below are the available configuration options:
 
 ### Servers Information
 
-- `config.servers`: An array of server objects, each containing `url` and `description` keys. For more details, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#server-object).
+- `config.servers`: Defines the server URLs for your API. This can be configured in three ways:
+
+  **Array Configuration (Static)**: An array of server objects, each containing `url` and `description` keys:
+  
+  ```ruby
+  config.servers = [
+    { url: 'https://api.production.com', description: 'Production Server' },
+    { url: 'https://staging.api.com', description: 'Staging Server' },
+    { url: 'http://localhost:3000', description: 'Development Server' }
+  ]
+  ```
+
+  **Lambda/Proc Configuration (Dynamic)**: A lambda or proc that returns an array of server objects, allowing for runtime server definition based on environment variables, Rails environment, or other dynamic conditions:
+  
+  ```ruby
+  config.servers = -> {
+    if Rails.env.production?
+      [{ url: 'https://api.production.com', description: 'Production Server' }]
+    elsif Rails.env.staging?
+      [{ url: 'https://staging.api.com', description: 'Staging Server' }]
+    else
+      [{ url: 'http://localhost:3000', description: 'Development Server' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Using environment variables for dynamic configuration
+  config.servers = -> {
+    base_url = ENV['API_BASE_URL'] || 'http://localhost:3000'
+    [{ url: base_url, description: "#{Rails.env.capitalize} Server" }]
+  }
+  ```
+
+  **Request-Aware Lambda/Proc Configuration**: A lambda or proc that accepts a request parameter, enabling server configuration based on the current request context (host, subdomain, headers, etc.):
+  
+  ```ruby
+  # Multi-tenant configuration based on subdomain
+  config.servers = ->(request) {
+    if request && request.subdomain.present?
+      [{ url: "https://#{request.subdomain}.api.yourdomain.com", description: "#{request.subdomain.capitalize} API" }]
+    else
+      [{ url: 'https://api.yourdomain.com', description: 'Main API' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Configuration based on request host
+  config.servers = ->(request) {
+    if request && request.host.include?('staging')
+      [{ url: "https://#{request.host}", description: 'Staging API' }]
+    elsif request && request.host.include?('production')
+      [{ url: "https://#{request.host}", description: 'Production API' }]
+    else
+      [{ url: 'http://localhost:3000', description: 'Development API' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Multi-region configuration based on request headers
+  config.servers = ->(request) {
+    region = request&.headers&.[]('X-Region') || 'us-east-1'
+    [{ url: "https://api-#{region}.yourdomain.com", description: "API - #{region.upcase}" }]
+  }
+  ```
+
+  **Note**: The request parameter is only available when the OpenAPI specification is generated in response to an HTTP request (e.g., when accessing the JSON endpoint). For static generation or when no request context is available, the request parameter will be `nil`.
+
+  For more details about server objects, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#server-object).
 
 ### Tag Information
 

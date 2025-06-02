@@ -7,7 +7,7 @@ module OasRails
       respond_to do |format|
         format.html { render "index", layout: OasRails.config.layout }
         format.json do
-          render json: OasRails.build.to_json, status: :ok
+          render json: OasRails.build(request: request).to_json, status: :ok
         end
       end
     end
