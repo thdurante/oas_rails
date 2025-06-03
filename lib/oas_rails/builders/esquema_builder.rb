@@ -20,22 +20,14 @@ module OasRails
         # @param klass [Class] The class for which the schema is built.
         # @return [Hash] The schema as a JSON-compatible hash.
         def build_outgoing_schema(klass:, model_to_schema_class: EasyTalk)
-          if klass.respond_to?(:api_hash_schema)
-            Rails.logger.debug("[#{klass}] Using custom schema.")
-            Rails.logger.debug("[#{klass}] Schema: #{klass.api_hash_schema}")
-            return klass.api_hash_schema
-          end
+          return klass.api_hash_schema if klass.respond_to?(:api_hash_schema)
 
-          schema = build_schema(
+          build_schema(
             klass: klass,
             model_to_schema_class: model_to_schema_class,
             excluded_columns: OasRails.config.excluded_columns_outgoing,
             exclude_primary_key: false
           )
-
-          Rails.logger.debug("[#{klass}] Generated schema: #{schema}")
-
-          schema
         end
 
         private

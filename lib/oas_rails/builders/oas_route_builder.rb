@@ -58,6 +58,7 @@ module OasRails
       def source_string
         controller_class.constantize.instance_method(method).source
       rescue ::MethodSource::SourceNotFoundError => _e
+        # Handle dynamically defined methods or methods without source - we just ignore them for now
         ''
       end
 
@@ -77,13 +78,8 @@ module OasRails
         method_comment = controller_class.constantize.instance_method(method).comment
         class_comment = extract_class_comment(controller_class.constantize)
 
-        Rails.logger.debug("[#{method}] Method comment: #{method_comment}")
-
         method_tags = parse_tags(method_comment)
         class_tags = parse_tags(class_comment)
-
-        Rails.logger.debug("[#{method}] Method tags: #{method_tags.inspect}")
-        Rails.logger.debug("[#{method}] Class tags: #{class_tags.inspect}")
 
         method_tags + class_tags
       end
@@ -92,7 +88,7 @@ module OasRails
         instance_method = klass.instance_method(method)
         return instance_method.class_comment if instance_method.respond_to?(:class_comment)
 
-        # Ruby 2.7 compatibility fallback
+        # Ruby 2.7 compatibility fallback (ignore class comment if not available)
         ''
       end
 

@@ -36,8 +36,7 @@ module OasRails
         @factory_examples[klass_sym].each_with_index.to_h do |obj, index|
           ["#{klass_sym}#{index + 1}", { value: { klass_sym => clean_example_object(obj: obj.as_json) } }]
         end.deep_symbolize_keys
-      rescue KeyError, NameError => e
-        Rails.logger.debug("Factory not found for #{klass_sym}: #{e.message}") if defined?(Rails) && Rails.logger
+      rescue KeyError, NameError => _e
         {}
       end
     end
