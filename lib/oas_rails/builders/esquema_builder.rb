@@ -18,8 +18,11 @@ module OasRails
         # Builds a schema for a class when it is used as outgoing API data.
         #
         # @param klass [Class] The class for which the schema is built.
+        # @param klass_method [String, Symbol, nil] Optional method to call on the class.
+        # @param model_to_schema_class [Class] The schema builder class.
         # @return [Hash] The schema as a JSON-compatible hash.
-        def build_outgoing_schema(klass:, model_to_schema_class: EasyTalk)
+        def build_outgoing_schema(klass:, klass_method: nil, model_to_schema_class: EasyTalk)
+          return klass.public_send(klass_method) if klass_method.present? && klass.respond_to?(klass_method)
           return klass.api_hash_schema if klass.respond_to?(:api_hash_schema)
 
           build_schema(
