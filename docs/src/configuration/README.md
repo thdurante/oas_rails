@@ -31,7 +31,7 @@ Then fill it with your data. Below are the available configuration options:
   ```ruby
   config.servers = [
     { url: 'https://api.production.com', description: 'Production Server' },
-    { url: 'https://staging.api.com', description: 'Staging Server' },
+    { url: 'https://api.staging.com', description: 'Staging Server' },
     { url: 'http://localhost:3000', description: 'Development Server' }
   ]
   ```
@@ -43,7 +43,7 @@ Then fill it with your data. Below are the available configuration options:
     if Rails.env.production?
       [{ url: 'https://api.production.com', description: 'Production Server' }]
     elsif Rails.env.staging?
-      [{ url: 'https://staging.api.com', description: 'Staging Server' }]
+      [{ url: 'https://api.staging.com', description: 'Staging Server' }]
     else
       [{ url: 'http://localhost:3000', description: 'Development Server' }]
     end

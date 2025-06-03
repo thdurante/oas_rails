@@ -54,7 +54,7 @@ OasRails.configure do |config|
   #   if Rails.env.production?
   #     [{ url: 'https://api.production.com', description: 'Production Server' }]
   #   elsif Rails.env.staging?
-  #     [{ url: 'https://staging.api.com', description: 'Staging Server' }]
+  #     [{ url: 'https://api.staging.com', description: 'Staging Server' }]
   #   else
   #     [{ url: 'http://localhost:3000', description: 'Development Server' }]
   #   end
