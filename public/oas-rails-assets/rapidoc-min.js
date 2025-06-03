@@ -1078,7 +1078,6 @@ pre[class*="language-"] {
 #api-info {
   font-size: calc(var(--font-size-regular) - 1px);
   margin-top: 8px;
-  margin-left: -15px;
 }
 
 #api-info span:before {
