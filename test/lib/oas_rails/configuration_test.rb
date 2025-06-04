@@ -206,7 +206,7 @@ module OasRails
       assert_equal "https://{defaultHost}", result.last.url
       assert_equal "Dynamic Server (enter your host)", result.last.description
       assert_not_nil result.last.variables
-      assert_equal "api.deployhq.com", result.last.variables[:defaultHost].default
+      assert_equal "api.domain.com", result.last.variables[:defaultHost].default
     end
 
     test "switching between array and proc configurations" do
@@ -299,6 +299,22 @@ module OasRails
       assert_equal "staging", server.variables[:environment].default
       assert_equal %w[staging production], server.variables[:environment].enum
       assert_equal "API environment", server.variables[:environment].description
+    end
+
+    test "info initialize accepts favicon parameter" do
+      info = OasRails::Spec::Info.new(favicon: 'custom-favicon.ico')
+      assert_equal 'custom-favicon.ico', info.favicon
+    end
+
+    test "info favicon defaults to nil" do
+      info = OasRails::Spec::Info.new
+      assert_nil info.favicon
+    end
+
+    test "info favicon can be set after initialization" do
+      info = OasRails::Spec::Info.new
+      info.favicon = '/path/to/favicon.png'
+      assert_equal '/path/to/favicon.png', info.favicon
     end
   end
 end

@@ -43,6 +43,12 @@ OasRails.configure do |config|
   config.info.contact.email = 'andres.ch@proton.me'
   config.info.contact.url = 'https://a-chacon.com'
 
+  # Favicon for the documentation (optional)
+  # You can use an asset pipeline asset, a static file, or a full URL
+  # config.info.favicon = 'favicon.ico'                    # Asset pipeline asset
+  # config.info.favicon = '/favicon.ico'                   # Static file in public/
+  # config.info.favicon = 'https://example.com/icon.png'   # Full URL
+
   # Servers Information. For more details follow: https://spec.openapis.org/oas/latest.html#server-object
   # Static configuration: An array of server objects
   config.servers = [{ url: 'http://localhost:3000', description: 'Local' }]

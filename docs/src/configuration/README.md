@@ -16,6 +16,13 @@ Then fill it with your data. Below are the available configuration options:
 
 - `config.info.description`: A detailed description of your API. This can include markdown formatting and will be displayed prominently in your documentation.
 
+- `config.info.favicon`: The favicon for your API documentation. This can be:
+  - An asset pipeline asset (e.g., `'favicon.ico'`, `'icons/custom-favicon.png'`)
+  - A static file in the public directory (e.g., `'/favicon.ico'`, `'/assets/favicon.png'`)
+  - A full URL (e.g., `'https://example.com/favicon.ico'`)
+  
+  The favicon will be automatically resolved at runtime, supporting assets with digests when using the asset pipeline.
+
 - `config.info.contact.name`: The name of the contact person or organization.
 
 - `config.info.contact.email`: The contact email address.

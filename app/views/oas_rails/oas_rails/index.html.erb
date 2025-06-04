@@ -6,6 +6,10 @@
     <%= csp_meta_tag %>
     <meta charset="utf-8">
     <!-- Important: rapi-doc uses utf8 characters -->
+    
+    <!-- Favicon -->
+    <%= render 'oas_rails/shared/favicon' %>
+    
     <script type="module" src="/oas-rails-assets/rapidoc-min.js"></script>
     <script>
       function applyTheme() {
@@ -22,8 +26,6 @@
         docEl.removeAttribute('nav-hover-text-color');
         docEl.removeAttribute('nav-accent-color');
         docEl.removeAttribute('primary-color');
-
-        console.log(theme === 'dark')
 
         if (theme === 'dark'){
           docEl.setAttribute('theme','dark');

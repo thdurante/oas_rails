@@ -1,5 +1,6 @@
 OasRails.configure do |config|
   config.info.title = 'Dummy API REST'
+  config.info.version = '1.0.0'
   config.info.summary = 'Core endpoints of Dummy App.'
   config.info.description = <<~HEREDOC
     # Adimuntque regni fuerit
@@ -26,6 +27,10 @@ OasRails.configure do |config|
   config.info.contact.name = 'Peter'
   config.info.contact.email = 'peter@gmail.com'
   config.info.contact.url = 'https://peter.com'
+
+  # Example favicon configuration - uncomment to test
+  # config.info.favicon = '/favicon.ico'  # Static file in public/
+
   config.servers = [{ url: 'http://localhost:3000', description: 'Local' },
                     { url: 'https://example.rb', description: 'Dev' }]
   config.tags = [{ name: "Users", description: "Manage the `amazing` Users table." }]
