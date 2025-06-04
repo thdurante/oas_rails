@@ -96,6 +96,97 @@ Then fill it with your data. Below are the available configuration options:
 
   For more details about server objects, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#server-object).
 
+#### Server Variables
+
+OasRails supports **server variables** following the OpenAPI 3.0+ specification, which allows users to customize server URLs directly in the documentation interface. This is particularly useful for multi-tenant applications or when users need to specify their own server endpoints.
+
+**Default Server Variables**: OasRails automatically includes a dynamic server with variables by default:
+
+```ruby
+# This server is included automatically in default_servers
+{
+  url: "https://{defaultHost}",
+  description: "Dynamic Server (enter your host)",
+  variables: {
+    defaultHost: {
+      default: "api.deployhq.com",
+      description: "Your server host (e.g., sg.deployhq.com for customer-specific endpoints)"
+    }
+  }
+}
+```
+
+**Custom Server Variables Configuration**: You can define servers with variables in any of the configuration methods:
+
+```ruby
+# Array configuration with server variables
+config.servers = [
+  {
+    url: "https://{environment}.api.{domain}",
+    description: "Environment and domain configurable API",
+    variables: {
+      environment: {
+        default: "staging",
+        enum: ["staging", "production"],
+        description: "API environment"
+      },
+      domain: {
+        default: "example.com",
+        description: "Your domain name"
+      }
+    }
+  }
+]
+```
+
+```ruby
+# Lambda configuration with server variables
+config.servers = -> {
+  [
+    {
+      url: "https://{customerHost}",
+      description: "Customer-specific API endpoint",
+      variables: {
+        customerHost: {
+          default: "api.yourcompany.com",
+          description: "Enter your customer-specific host (e.g., customer1.api.yourcompany.com)"
+        }
+      }
+    }
+  ]
+}
+```
+
+```ruby
+# Request-aware configuration with server variables
+config.servers = ->(request) {
+  base_host = request&.host || "localhost:3000"
+  [
+    {
+      url: "https://{subdomain}.#{base_host}",
+      description: "Multi-tenant API",
+      variables: {
+        subdomain: {
+          default: "api",
+          description: "Your tenant subdomain"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Server Variable Properties**:
+- `default`: (Required) The default value for the variable
+- `enum`: (Optional) An array of valid values for the variable
+- `description`: (Optional) A description shown to users in the documentation interface
+
+This feature is especially useful for:
+- **Multi-tenant applications** where customers access different subdomains
+- **Environment selection** where users need to choose between staging/production
+- **Regional deployments** where users need to specify their region
+- **Customer-specific endpoints** where each customer has their own API host
+
 ### Tag Information
 
 - `config.tags`: An array of tag objects, each containing `name` and `description` keys. For more details, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#tag-object).

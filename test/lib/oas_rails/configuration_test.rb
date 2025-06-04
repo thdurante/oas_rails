@@ -199,9 +199,14 @@ module OasRails
       @config.instance_variable_set(:@servers_proc, nil)
 
       result = @config.servers
-      assert_equal 1, result.size
+      assert_equal 2, result.size
       assert_equal "http://localhost:3000", result.first.url
       assert_equal "Rails Default Development Server", result.first.description
+      # Test the new dynamic server with variables
+      assert_equal "https://{defaultHost}", result.last.url
+      assert_equal "Dynamic Server (enter your host)", result.last.description
+      assert_not_nil result.last.variables
+      assert_equal "api.deployhq.com", result.last.variables[:defaultHost].default
     end
 
     test "switching between array and proc configurations" do
@@ -266,6 +271,34 @@ module OasRails
         assert_respond_to @config, "response_body_of_#{response}="
         assert_respond_to @config, "response_body_of_#{response}"
       end
+    end
+
+    test "servers with variables work correctly" do
+      servers = [
+        {
+          url: "https://{environment}.api.example.com",
+          description: "Environment-specific API",
+          variables: {
+            environment: {
+              default: "staging",
+              enum: %w[staging production],
+              description: "API environment"
+            }
+          }
+        }
+      ]
+      @config.servers = servers
+
+      result = @config.servers
+      assert_equal 1, result.size
+      server = result.first
+      assert_equal "https://{environment}.api.example.com", server.url
+      assert_equal "Environment-specific API", server.description
+      assert_not_nil server.variables
+      assert_not_nil server.variables[:environment]
+      assert_equal "staging", server.variables[:environment].default
+      assert_equal %w[staging production], server.variables[:environment].enum
+      assert_equal "API environment", server.variables[:environment].description
     end
   end
 end

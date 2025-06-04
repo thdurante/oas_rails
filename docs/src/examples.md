@@ -1,5 +1,7 @@
 # Examples
 
+## Controller Example
+
 ```ruby
 class UsersController < ApplicationController
   before_action :set_user, only: %i[show update destroy]
@@ -77,4 +79,100 @@ class UsersController < ApplicationController
 end
 ```
 
+## Server Variables Configuration Examples
 
+### Multi-Tenant Application (Customer Subdomains)
+
+Perfect for SaaS applications where each customer has their own subdomain:
+
+```ruby
+# config/initializers/oas_rails.rb
+OasRails.configure do |config|
+  config.servers = [
+    {
+      url: "https://{customerSubdomain}.myapp.com",
+      description: "Customer-specific API endpoint",
+      variables: {
+        customerSubdomain: {
+          default: "demo",
+          description: "Your customer subdomain (e.g., 'acme' for acme.myapp.com)"
+        }
+      }
+    },
+    {
+      url: "https://api.myapp.com",
+      description: "Main API endpoint"
+    }
+  ]
+end
+```
+
+### Environment Selection with Dynamic Hosts
+
+Allow users to switch between staging and production environments:
+
+```ruby
+# config/initializers/oas_rails.rb
+OasRails.configure do |config|
+  config.servers = [
+    {
+      url: "https://{environment}.api.{domain}",
+      description: "Configurable environment and domain",
+      variables: {
+        environment: {
+          default: "staging",
+          enum: ["staging", "production"],
+          description: "Target environment"
+        },
+        domain: {
+          default: "yourcompany.com",
+          description: "Your domain name"
+        }
+      }
+    }
+  ]
+end
+```
+
+### Request-Aware Dynamic Configuration
+
+Dynamically configure servers based on the incoming request:
+
+```ruby
+# config/initializers/oas_rails.rb
+OasRails.configure do |config|
+  config.servers = ->(request) {
+    if request && request.subdomain.present?
+      # Show tenant-specific server when accessed from subdomain
+      [
+        {
+          url: "https://{subdomain}.#{request.host}",
+          description: "Tenant API",
+          variables: {
+            subdomain: {
+              default: request.subdomain,
+              description: "Your tenant subdomain"
+            }
+          }
+        }
+      ]
+    else
+      # Show configurable server when accessed from main domain
+      [
+        {
+          url: "https://{customerHost}",
+          description: "Customer-specific endpoint",
+          variables: {
+            customerHost: {
+              default: "api.yourcompany.com",
+              description: "Enter your customer-specific host"
+            }
+          }
+        }
+      ]
+    end
+  }
+end
+```
+
+These configurations will automatically display input fields in the RapiDoc interface, allowing your API users to customize the server URL before making test requests.

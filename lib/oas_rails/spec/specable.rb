@@ -17,12 +17,16 @@ module OasRails
                               value.to_spec
                             elsif value.is_a?(Array) && value.all? { |elem| elem.respond_to?(:to_spec) }
                               value.map(&:to_spec)
-                            # elsif value.is_a?(Hash)
-                            #   hash = {}
-                            #   value.each do |key, object|
-                            #     hash[key] = object.to_spec
-                            #   end
-                            #   hash
+                            elsif value.is_a?(Hash)
+                              processed_hash = {}
+                              value.each do |hash_key, object|
+                                processed_hash[hash_key] = if object.respond_to?(:to_spec)
+                                                             object.to_spec
+                                                           else
+                                                             object
+                                                           end
+                              end
+                              processed_hash
                             else
                               value
                             end

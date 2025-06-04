@@ -42,6 +42,7 @@ module OasRails
     autoload :Contact, "oas_rails/spec/contact"
     autoload :Info, "oas_rails/spec/info"
     autoload :Server, "oas_rails/spec/server"
+    autoload :ServerVariable, "oas_rails/spec/server_variable"
     autoload :Tag, "oas_rails/spec/tag"
     autoload :Specification, "oas_rails/spec/specification"
     autoload :Reference, "oas_rails/spec/reference"

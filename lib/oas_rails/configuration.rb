@@ -63,7 +63,19 @@ module OasRails
     end
 
     def default_servers
-      [Spec::Server.new(url: "http://localhost:3000", description: "Rails Default Development Server")]
+      [
+        Spec::Server.new(url: "http://localhost:3000", description: "Rails Default Development Server"),
+        Spec::Server.new(
+          url: "https://{defaultHost}",
+          description: "Dynamic Server (enter your host)",
+          variables: {
+            defaultHost: {
+              default: "api.domain.com",
+              description: "Your server host (e.g., api.domain.com)"
+            }
+          }
+        )
+      ]
     end
 
     def servers=(value)
@@ -72,7 +84,13 @@ module OasRails
         @servers_proc = value
         @servers_static = nil
       when Array
-        @servers_static = value.map { |s| Spec::Server.new(url: s[:url], description: s[:description]) }
+        @servers_static = value.map do |s|
+          Spec::Server.new(
+            url: s[:url],
+            description: s[:description],
+            variables: s[:variables]
+          )
+        end
         @servers_proc = nil
       else
         raise ArgumentError, "servers must be an Array or a Proc"
@@ -89,7 +107,13 @@ module OasRails
                       end
         case proc_result
         when Array
-          proc_result.map { |s| Spec::Server.new(url: s[:url], description: s[:description]) }
+          proc_result.map do |s|
+            Spec::Server.new(
+              url: s[:url],
+              description: s[:description],
+              variables: s[:variables]
+            )
+          end
         else
           raise ArgumentError, "servers proc must return an Array"
         end

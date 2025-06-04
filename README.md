@@ -23,6 +23,13 @@ Explore the interactive documentation live:
 
 ![Screenshot](https://a-chacon.com/assets/images/oas_rails_ui.png)
 
+## ✨ Key Features
+
+- **Dynamic Server Variables**: Configure server URLs with variables that users can customize directly in the documentation interface - perfect for multi-tenant applications where customers need to specify their subdomain or custom endpoints
+- **Automatic Documentation**: Generate interactive API documentation without additional DSLs or complex configurations
+- **Rails-Native**: Built specifically for Rails APIs using standard REST conventions
+- **Live Documentation**: Documentation updates automatically as your code changes
+
 ## Related Projects
 
 - **[ApiPie](https://github.com/Apipie/apipie-rails)**: Doesn't support OAS 3.1, requires learning a DSL, lacks a nice UI
@@ -36,6 +43,7 @@ Explore the interactive documentation live:
 - **Dynamic**: No command required to generate docs
 - **Simple**: Complement default documentation with a few comments; no need to learn a complex DSL
 - **Pure Ruby on Rails APIs**: No additional frameworks needed (e.g., Grape, RSpec)
+- **User-Friendly**: Server variables allow customers to test endpoints on their own domains/subdomains
 
 ## 📽️ Motivation
 
