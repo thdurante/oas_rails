@@ -1,9 +1,9 @@
 module OasRails
   class ActiveRecordExampleFinder
-    def initialize(context: :incoming, utils: Utils, factory_bot: FactoryBot, erb: ERB, yaml: YAML, file: File)
+    def initialize(context: :incoming, utils: Utils, factory_bot: nil, erb: ERB, yaml: YAML, file: File)
       @context = context
       @utils = utils
-      @factory_bot = factory_bot
+      @factory_bot = factory_bot || (defined?(FactoryBot) ? FactoryBot : nil)
       @erb = erb
       @yaml = yaml
       @file = file
@@ -26,6 +26,8 @@ module OasRails
     # @param klass [Class] the class to fetch examples for.
     # @return [Hash] a hash containing examples data or an empty hash if no examples are found.
     def fetch_factory_bot_examples(klass:)
+      return {} unless @factory_bot
+      
       klass_sym = @utils.class_to_symbol(klass)
 
       begin
@@ -34,7 +36,7 @@ module OasRails
         @factory_examples[klass_sym].each_with_index.to_h do |obj, index|
           ["#{klass_sym}#{index + 1}", { value: { klass_sym => clean_example_object(obj: obj.as_json) } }]
         end.deep_symbolize_keys
-      rescue KeyError
+      rescue KeyError, NameError => _e
         {}
       end
     end

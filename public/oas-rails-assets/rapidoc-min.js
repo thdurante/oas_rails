@@ -1078,7 +1078,6 @@ pre[class*="language-"] {
 #api-info {
   font-size: calc(var(--font-size-regular) - 1px);
   margin-top: 8px;
-  margin-left: -15px;
 }
 
 #api-info span:before {
@@ -2580,8 +2579,8 @@ pre[class*="language-"] {
             ${this.resolvedSpec.info.termsOfService?J`<span><a href="${this.resolvedSpec.info.termsOfService}" part="anchor anchor-overview">Terms of Service</a></span>`:""}
             ${this.specUrl&&"true"===this.allowSpecFileDownload?J`
                 <div style="display:flex; margin:12px 0; gap:8px; justify-content: start;">
-                  <button class="m-btn thin-border" style="min-width:170px" part="btn btn-outline" @click='${e=>{gt(this.specUrl,"openapi-spec")}}'>Download OpenAPI spec</button>
-                  ${null!==(s=this.specUrl)&&void 0!==s&&s.trim().toLowerCase().endsWith("json")?J`<button class="m-btn thin-border" style="width:200px" part="btn btn-outline" @click='${e=>{yt(this.specUrl)}}'>View OpenAPI spec (New Tab)</button>`:""}
+                  <button class="m-btn thin-border" style="min-width: 280px !important" part="btn btn-outline" @click='${e=>{gt(this.specUrl,"openapi-spec")}}'>Download OpenAPI spec</button>
+                  ${null!==(s=this.specUrl)&&void 0!==s&&s.trim().toLowerCase().endsWith("json")?J`<button class="m-btn thin-border" style="min-width:280px !important" part="btn btn-outline" @click='${e=>{yt(this.specUrl)}}'>View OpenAPI spec (New Tab)</button>`:""}
                 </div>`:""}
           </div>
           <slot name="overview"></slot>

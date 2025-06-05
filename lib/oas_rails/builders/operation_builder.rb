@@ -9,11 +9,11 @@ module OasRails
       end
 
       def from_oas_route(oas_route)
-        @operation.summary = extract_summary(oas_route:)
-        @operation.operation_id = extract_operation_id(oas_route:)
+        @operation.summary = extract_summary(oas_route: oas_route)
+        @operation.operation_id = extract_operation_id(oas_route: oas_route)
         @operation.description = oas_route.docstring
-        @operation.tags = extract_tags(oas_route:)
-        @operation.security = extract_security(oas_route:)
+        @operation.tags = extract_tags(oas_route: oas_route)
+        @operation.security = extract_security(oas_route: oas_route)
         @operation.parameters = ParametersBuilder.new(@specification).from_oas_route(oas_route).build
         @operation.request_body = RequestBodyBuilder.new(@specification).from_oas_route(oas_route).reference
         @operation.responses = ResponsesBuilder.new(@specification)

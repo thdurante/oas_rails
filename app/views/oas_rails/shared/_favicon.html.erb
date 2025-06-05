@@ -1,0 +1,12 @@
+<% if OasRails.config.info.favicon.present? %>
+  <% if respond_to?(:favicon_link_tag_for_oas_rails) %>
+    <%= favicon_link_tag_for_oas_rails %>
+  <% else %>
+    <!-- Fallback favicon handling -->
+    <% favicon_path = OasRails.config.info.favicon %>
+    <% unless favicon_path.match?(%r{\Ahttps?://}) || favicon_path.start_with?('/') %>
+      <% favicon_path = image_path(favicon_path) rescue OasRails.config.info.favicon %>
+    <% end %>
+    <%= favicon_link_tag(favicon_path) %>
+  <% end %>
+<% end %> 

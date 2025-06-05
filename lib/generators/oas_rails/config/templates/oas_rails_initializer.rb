@@ -43,8 +43,37 @@ OasRails.configure do |config|
   config.info.contact.email = 'andres.ch@proton.me'
   config.info.contact.url = 'https://a-chacon.com'
 
+  # Favicon for the documentation (optional)
+  # You can use an asset pipeline asset, a static file, or a full URL
+  # config.info.favicon = 'favicon.ico'                    # Asset pipeline asset
+  # config.info.favicon = '/favicon.ico'                   # Static file in public/
+  # config.info.favicon = 'https://example.com/icon.png'   # Full URL
+
   # Servers Information. For more details follow: https://spec.openapis.org/oas/latest.html#server-object
+  # Static configuration: An array of server objects
   config.servers = [{ url: 'http://localhost:3000', description: 'Local' }]
+
+  # Dynamic configuration: Use a lambda/proc for runtime server definition
+  # Uncomment and modify the following example for dynamic servers based on environment:
+  #
+  # config.servers = -> {
+  #   if Rails.env.production?
+  #     [{ url: 'https://api.production.com', description: 'Production Server' }]
+  #   elsif Rails.env.staging?
+  #     [{ url: 'https://api.staging.com', description: 'Staging Server' }]
+  #   else
+  #     [{ url: 'http://localhost:3000', description: 'Development Server' }]
+  #   end
+  # }
+  #
+  # Request-aware configuration: Use request context for multi-tenant or dynamic routing
+  # config.servers = ->(request) {
+  #   if request && request.subdomain.present?
+  #     [{ url: "https://#{request.subdomain}.api.yourdomain.com", description: "#{request.subdomain.capitalize} API" }]
+  #   else
+  #     [{ url: 'https://api.yourdomain.com', description: 'Main API' }]
+  #   end
+  # }
 
   # Tag Information. For more details follow: https://spec.openapis.org/oas/latest.html#tag-object
   config.tags = [{ name: "Users", description: "Manage the `amazing` Users table." }]

@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
     Dir['{app,config,db,lib,public}/**/*', 'LICENSE', 'Rakefile', 'README.md']
   end
 
-  spec.required_ruby_version = ">= 3.1"
+  spec.required_ruby_version = ">= 2.7"
 
   spec.add_dependency 'easy_talk_two', '~> 1.1.2'
   spec.add_dependency 'method_source', '~> 1.0'

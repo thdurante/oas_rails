@@ -16,6 +16,13 @@ Then fill it with your data. Below are the available configuration options:
 
 - `config.info.description`: A detailed description of your API. This can include markdown formatting and will be displayed prominently in your documentation.
 
+- `config.info.favicon`: The favicon for your API documentation. This can be:
+  - An asset pipeline asset (e.g., `'favicon.ico'`, `'icons/custom-favicon.png'`)
+  - A static file in the public directory (e.g., `'/favicon.ico'`, `'/assets/favicon.png'`)
+  - A full URL (e.g., `'https://example.com/favicon.ico'`)
+  
+  The favicon will be automatically resolved at runtime, supporting assets with digests when using the asset pipeline.
+
 - `config.info.contact.name`: The name of the contact person or organization.
 
 - `config.info.contact.email`: The contact email address.
@@ -24,7 +31,168 @@ Then fill it with your data. Below are the available configuration options:
 
 ### Servers Information
 
-- `config.servers`: An array of server objects, each containing `url` and `description` keys. For more details, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#server-object).
+- `config.servers`: Defines the server URLs for your API. This can be configured in three ways:
+
+  **Array Configuration (Static)**: An array of server objects, each containing `url` and `description` keys:
+  
+  ```ruby
+  config.servers = [
+    { url: 'https://api.production.com', description: 'Production Server' },
+    { url: 'https://api.staging.com', description: 'Staging Server' },
+    { url: 'http://localhost:3000', description: 'Development Server' }
+  ]
+  ```
+
+  **Lambda/Proc Configuration (Dynamic)**: A lambda or proc that returns an array of server objects, allowing for runtime server definition based on environment variables, Rails environment, or other dynamic conditions:
+  
+  ```ruby
+  config.servers = -> {
+    if Rails.env.production?
+      [{ url: 'https://api.production.com', description: 'Production Server' }]
+    elsif Rails.env.staging?
+      [{ url: 'https://api.staging.com', description: 'Staging Server' }]
+    else
+      [{ url: 'http://localhost:3000', description: 'Development Server' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Using environment variables for dynamic configuration
+  config.servers = -> {
+    base_url = ENV['API_BASE_URL'] || 'http://localhost:3000'
+    [{ url: base_url, description: "#{Rails.env.capitalize} Server" }]
+  }
+  ```
+
+  **Request-Aware Lambda/Proc Configuration**: A lambda or proc that accepts a request parameter, enabling server configuration based on the current request context (host, subdomain, headers, etc.):
+  
+  ```ruby
+  # Multi-tenant configuration based on subdomain
+  config.servers = ->(request) {
+    if request && request.subdomain.present?
+      [{ url: "https://#{request.subdomain}.api.yourdomain.com", description: "#{request.subdomain.capitalize} API" }]
+    else
+      [{ url: 'https://api.yourdomain.com', description: 'Main API' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Configuration based on request host
+  config.servers = ->(request) {
+    if request && request.host.include?('staging')
+      [{ url: "https://#{request.host}", description: 'Staging API' }]
+    elsif request && request.host.include?('production')
+      [{ url: "https://#{request.host}", description: 'Production API' }]
+    else
+      [{ url: 'http://localhost:3000', description: 'Development API' }]
+    end
+  }
+  ```
+  
+  ```ruby
+  # Multi-region configuration based on request headers
+  config.servers = ->(request) {
+    region = request&.headers&.[]('X-Region') || 'us-east-1'
+    [{ url: "https://api-#{region}.yourdomain.com", description: "API - #{region.upcase}" }]
+  }
+  ```
+
+  **Note**: The request parameter is only available when the OpenAPI specification is generated in response to an HTTP request (e.g., when accessing the JSON endpoint). For static generation or when no request context is available, the request parameter will be `nil`.
+
+  For more details about server objects, refer to the [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#server-object).
+
+#### Server Variables
+
+OasRails supports **server variables** following the OpenAPI 3.0+ specification, which allows users to customize server URLs directly in the documentation interface. This is particularly useful for multi-tenant applications or when users need to specify their own server endpoints.
+
+**Default Server Variables**: OasRails automatically includes a dynamic server with variables by default:
+
+```ruby
+# This server is included automatically in default_servers
+{
+  url: "https://{defaultHost}",
+  description: "Dynamic Server (enter your host)",
+  variables: {
+    defaultHost: {
+      default: "api.deployhq.com",
+      description: "Your server host (e.g., sg.deployhq.com for customer-specific endpoints)"
+    }
+  }
+}
+```
+
+**Custom Server Variables Configuration**: You can define servers with variables in any of the configuration methods:
+
+```ruby
+# Array configuration with server variables
+config.servers = [
+  {
+    url: "https://{environment}.api.{domain}",
+    description: "Environment and domain configurable API",
+    variables: {
+      environment: {
+        default: "staging",
+        enum: ["staging", "production"],
+        description: "API environment"
+      },
+      domain: {
+        default: "example.com",
+        description: "Your domain name"
+      }
+    }
+  }
+]
+```
+
+```ruby
+# Lambda configuration with server variables
+config.servers = -> {
+  [
+    {
+      url: "https://{customerHost}",
+      description: "Customer-specific API endpoint",
+      variables: {
+        customerHost: {
+          default: "api.yourcompany.com",
+          description: "Enter your customer-specific host (e.g., customer1.api.yourcompany.com)"
+        }
+      }
+    }
+  ]
+}
+```
+
+```ruby
+# Request-aware configuration with server variables
+config.servers = ->(request) {
+  base_host = request&.host || "localhost:3000"
+  [
+    {
+      url: "https://{subdomain}.#{base_host}",
+      description: "Multi-tenant API",
+      variables: {
+        subdomain: {
+          default: "api",
+          description: "Your tenant subdomain"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Server Variable Properties**:
+- `default`: (Required) The default value for the variable
+- `enum`: (Optional) An array of valid values for the variable
+- `description`: (Optional) A description shown to users in the documentation interface
+
+This feature is especially useful for:
+- **Multi-tenant applications** where customers access different subdomains
+- **Environment selection** where users need to choose between staging/production
+- **Regional deployments** where users need to specify their region
+- **Customer-specific endpoints** where each customer has their own API host
 
 ### Tag Information
 

@@ -15,7 +15,7 @@ module OasRails
                   :use_model_names,
                   :rapidoc_theme
 
-    attr_reader :servers, :tags, :security_schema, :include_mode, :response_body_of_default
+    attr_reader :tags, :security_schema, :include_mode, :response_body_of_default
 
     def initialize
       @info = Spec::Info.new
@@ -63,11 +63,65 @@ module OasRails
     end
 
     def default_servers
-      [Spec::Server.new(url: "http://localhost:3000", description: "Rails Default Development Server")]
+      [
+        Spec::Server.new(url: "http://localhost:3000", description: "Rails Default Development Server"),
+        Spec::Server.new(
+          url: "https://{defaultHost}",
+          description: "Dynamic Server (enter your host)",
+          variables: {
+            defaultHost: {
+              default: "api.domain.com",
+              description: "Your server host (e.g., api.domain.com)"
+            }
+          }
+        )
+      ]
     end
 
     def servers=(value)
-      @servers = value.map { |s| Spec::Server.new(url: s[:url], description: s[:description]) }
+      case value
+      when Proc
+        @servers_proc = value
+        @servers_static = nil
+      when Array
+        @servers_static = value.map do |s|
+          Spec::Server.new(
+            url: s[:url],
+            description: s[:description],
+            variables: s[:variables]
+          )
+        end
+        @servers_proc = nil
+      else
+        raise ArgumentError, "servers must be an Array or a Proc"
+      end
+    end
+
+    def servers(request = nil)
+      if @servers_proc
+        # Evaluate the proc and convert the result to Server objects
+        proc_result = if @servers_proc.arity > 0
+                        @servers_proc.call(request)
+                      else
+                        @servers_proc.call
+                      end
+        case proc_result
+        when Array
+          proc_result.map do |s|
+            Spec::Server.new(
+              url: s[:url],
+              description: s[:description],
+              variables: s[:variables]
+            )
+          end
+        else
+          raise ArgumentError, "servers proc must return an Array"
+        end
+      elsif @servers_static
+        @servers_static
+      else
+        default_servers
+      end
     end
 
     def tags=(value)

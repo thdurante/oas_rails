@@ -26,13 +26,16 @@ module OasRails
 
       case type
       when /^Hash\{(.+)\}$/i
-        { type: :object, required:, properties: parse_object_properties(::Regexp.last_match(1)) }
+        { type: :object, required: required, properties: parse_object_properties(::Regexp.last_match(1)) }
       when /^Array<(.+)>$/i
-        { type: :array, required:, items: parse_type(::Regexp.last_match(1)) }
+        { type: :array, required: required, items: parse_type(::Regexp.last_match(1)) }
+      when ->(t) { t&.include?('.') }
+        klass, klass_method = type.split('.')
+        Builders::EsquemaBuilder.build_outgoing_schema(klass: klass.constantize, klass_method: klass_method)
       when ->(t) { Utils.active_record_class?(t) }
-        Builders::EsquemaBuilder.build_outgoing_schema(klass: type.constantize)
+        Builders::EsquemaBuilder.build_outgoing_schema(klass: type.constantize, klass_method: :api_hash_schema)
       else
-        { type: type.downcase.to_sym, required: }
+        { type: type.downcase.to_sym, required: required }
       end
     end
 

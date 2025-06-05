@@ -7,7 +7,7 @@ module OasRails
       # @return [RequestBodyTag] The parsed request body tag object.
       def parse_tag_with_request_body(tag_name, text)
         description, klass, schema, required = extract_description_and_schema(text.squish)
-        RequestBodyTag.new(tag_name, description, klass, schema:, required:)
+        RequestBodyTag.new(tag_name, description, klass, schema: schema, required: required)
       end
 
       # Parses a tag that represents a request body example.
@@ -26,7 +26,7 @@ module OasRails
       def parse_tag_with_parameter(tag_name, text)
         name, location, schema, required, description = extract_name_location_schema_and_description(text.squish)
         name = "#{name}[]" if location == "query" && schema[:type] == "array"
-        ParameterTag.new(tag_name, name, description, schema, location, required:)
+        ParameterTag.new(tag_name, name, description, schema, location, required: required)
       end
 
       # Parses a tag that represents a response.
@@ -44,7 +44,7 @@ module OasRails
       # @return [ResponseExampleTag] The parsed response example tag object.
       def parse_tag_with_response_example(tag_name, text)
         description, code, hash = extract_name_code_and_hash(text.squish)
-        ResponseExampleTag.new(tag_name, description, content: hash, code:)
+        ResponseExampleTag.new(tag_name, description, content: hash, code: code)
       end
 
       private
@@ -155,7 +155,7 @@ module OasRails
 
         if Utils.active_record_class?(type_text)
           klass = type_text.constantize
-          schema = Builders::EsquemaBuilder.build_outgoing_schema(klass:)
+          schema = Builders::EsquemaBuilder.build_outgoing_schema(klass: klass)
         else
           schema = JsonSchemaGenerator.process_string(type_text)[:json_schema]
           klass = Object
