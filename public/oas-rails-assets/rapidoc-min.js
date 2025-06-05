@@ -2800,7 +2800,7 @@ pre[class*="language-"] {
     </nav>`}
 </nav>
 `}function IF(e){const t=new Xe.Renderer;return t.heading=(t,r,s,n)=>`<h${r} class="observe-me" id="${e}--${n.slug(s)}">${t}</h${r}>`,t}function _F(e){return J`
-    <div class='regular-font' part="section-operations-in-tag">
+    <div class='regular-font section-gap--focused-mode' part="section-operations-in-tag">
       ${e}
     </div>`}function RF(){var e;if("true"===this.showInfo)return _F(EF.call(this));const t=this.resolvedSpec.tags[0],r=null===(e=this.resolvedSpec.tags[0])||void 0===e?void 0:e.paths[0];return _F(t&&r?vF.call(this,r,t.name):"")}function FF(e){return J`
     <h1 id="${e.elementId}">${e.displayName||e.name}</h1>
