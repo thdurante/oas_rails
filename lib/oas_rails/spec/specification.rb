@@ -11,7 +11,13 @@ module OasRails
       # Clears the cache if running in the development environment.
       def initialize(request: nil)
         @request = request
-        clear_cache unless Rails.env.production?
+
+        # Only clear internal development caches, not OasRails spec cache when caching is enabled
+        unless Rails.env.production?
+          clear_internal_caches
+          # Only clear OasRails cache if caching is disabled
+          OasRails.clear_cache! unless OasRails.config.enable_caching
+        end
 
         @components = Components.new(self)
         @info = OasRails.config.info
@@ -32,10 +38,11 @@ module OasRails
         end
       end
 
-      # Clears the cache for MethodSource and RouteExtractor.
+      # Clears the internal development caches for MethodSource and RouteExtractor.
+      # This does not clear the OasRails specification cache.
       #
       # @return [void]
-      def clear_cache
+      def clear_internal_caches
         if defined?(MethodSource)
           if MethodSource.respond_to?(:clear_cache)
             MethodSource.clear_cache

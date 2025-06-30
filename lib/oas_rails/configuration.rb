@@ -13,7 +13,11 @@ module OasRails
                   :possible_default_responses,
                   :http_verbs,
                   :use_model_names,
-                  :rapidoc_theme
+                  :rapidoc_theme,
+                  :enable_caching,
+                  :cache_ttl,
+                  :cache_key_generator,
+                  :cache_debug
 
     attr_reader :tags, :security_schema, :include_mode, :response_body_of_default
 
@@ -38,6 +42,10 @@ module OasRails
       @use_model_names = false
       @rapidoc_theme = :rails
       @include_mode = :all
+      @enable_caching = false
+      @cache_ttl = 1.hour
+      @cache_key_generator = nil
+      @cache_debug = false
 
       @possible_default_responses.each do |response|
         method_name = "response_body_of_#{response}="

@@ -139,4 +139,32 @@ OasRails.configure do |config|
   # config.possible_default_responses = [:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_entity]
   # config.response_body_of_default = "Hash{ message: String }"
   # config.response_body_of_unprocessable_entity= "Hash{ errors: Array<String> }"
+
+  # #############
+  # Cache Settings
+  # #############
+
+  # Enable caching of the OpenAPI specification for improved performance
+  # Default: false
+  # config.enable_caching = true
+
+  # Cache Time-To-Live (TTL) - how long the cache is valid
+  # Default: 1.hour
+  # config.cache_ttl = 30.minutes
+
+  # Cache key generator - REQUIRED when caching is enabled
+  # Provide a proc that generates cache keys based on request and config
+  # The proc receives (request, config) as parameters and must return a string
+  # config.cache_key_generator = ->(request, config) {
+  #   "my_app_oas_#{request&.host || 'default'}_#{Rails.env}_#{config.include_mode}"
+  # }
+
+  # Enable cache debugging - logs cache operations to Rails logger
+  # Default: false
+  # config.cache_debug = true
+
+  # NOTE: When caching is enabled, you can:
+  # - Check cache status: GET /your-oas-path/cache/status.json
+  # - Clear cache: DELETE /your-oas-path/cache.json or POST /your-oas-path/cache/clear.json
+  # - Use OasRails.clear_cache! programmatically to clear cache
 end
