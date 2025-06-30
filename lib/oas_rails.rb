@@ -66,10 +66,21 @@ module OasRails
 
   class << self
     def build(request: nil)
+      # Return cached version if caching is enabled and cache exists
+      if config.enable_caching
+        cached_spec = fetch_from_cache(request)
+        return cached_spec if cached_spec
+      end
+
+      # Build the specification
       oas = Spec::Specification.new(request: request)
       oas.build
+      spec = oas.to_spec
 
-      oas.to_spec
+      # Cache the result if caching is enabled
+      store_in_cache(spec, request) if config.enable_caching
+
+      spec
     end
 
     # Configurations for make the OasRails engine Work.
@@ -80,6 +91,41 @@ module OasRails
 
     def config
       @config ||= Configuration.new
+    end
+
+    # Clear the OpenAPI specification cache
+    def clear_cache!
+      case config.cache_store
+      when :rails_cache
+        Rails.cache.delete_matched("oas_rails_spec_*") if Rails.cache.respond_to?(:delete_matched)
+      when :memory
+        @memory_cache&.clear
+      end
+    end
+
+    # Check if specification is cached
+    def cached?(request: nil)
+      return false unless config.enable_caching
+
+      cache_key = generate_cache_key(request)
+      case config.cache_store
+      when :rails_cache
+        Rails.cache.exist?(cache_key)
+      when :memory
+        @memory_cache ||= {}
+        cached_data = @memory_cache[cache_key]
+        return false unless cached_data
+
+        # Check if cache has expired
+        if cached_data[:expires_at] <= Time.current
+          @memory_cache.delete(cache_key)
+          return false
+        end
+
+        true
+      else
+        false
+      end
     end
 
     def configure_yard!
@@ -99,6 +145,79 @@ module OasRails
       yard_tags.each do |tag_name, (method_name, handler)|
         ::YARD::Tags::Library.define_tag(tag_name, method_name, handler)
       end
+    end
+
+    private
+
+    def fetch_from_cache(request)
+      cache_key = generate_cache_key(request)
+      log_cache_debug("Attempting to fetch from cache with key: #{cache_key}") if config.cache_debug
+
+      case config.cache_store
+      when :rails_cache
+        result = Rails.cache.read(cache_key)
+        log_cache_debug("Rails cache #{result ? 'HIT' : 'MISS'} for key: #{cache_key}") if config.cache_debug
+        result
+      when :memory
+        @memory_cache ||= {}
+        cached_data = @memory_cache[cache_key]
+        return nil unless cached_data
+
+        # Check if cache has expired
+        if cached_data[:expires_at] <= Time.current
+          @memory_cache.delete(cache_key)
+          log_cache_debug("Memory cache EXPIRED for key: #{cache_key}") if config.cache_debug
+          return nil
+        end
+
+        log_cache_debug("Memory cache HIT for key: #{cache_key}") if config.cache_debug
+        cached_data[:data]
+      end
+    end
+
+    def store_in_cache(spec, request)
+      cache_key = generate_cache_key(request)
+      log_cache_debug("Storing in cache with key: #{cache_key}, TTL: #{config.cache_ttl}") if config.cache_debug
+
+      case config.cache_store
+      when :rails_cache
+        success = Rails.cache.write(cache_key, spec, expires_in: config.cache_ttl)
+        log_cache_debug("Rails cache write #{success ? 'SUCCESS' : 'FAILED'} for key: #{cache_key}") if config.cache_debug
+      when :memory
+        @memory_cache ||= {}
+        @memory_cache[cache_key] = {
+          data: spec,
+          expires_at: Time.current + config.cache_ttl
+        }
+        log_cache_debug("Memory cache write SUCCESS for key: #{cache_key}") if config.cache_debug
+      end
+    end
+
+    def generate_cache_key(request)
+      # Use custom cache key generator if provided
+      if config.cache_key_generator.respond_to?(:call)
+        custom_key = config.cache_key_generator.call(request, config)
+        log_cache_debug("Custom cache key generated: #{custom_key}") if config.cache_debug
+        return custom_key
+      end
+      
+      # Generate a cache key based on configuration that affects the spec
+      key_components = [
+        "oas_rails_spec",
+        config.api_path,
+        config.include_mode,
+        config.ignored_actions.sort.join(","),
+        Rails.env,
+        # Include request host if available for server-specific caching
+        request&.host || "default"
+      ]
+      generated_key = key_components.join("_").gsub(/[^a-zA-Z0-9_-]/, "_")
+      log_cache_debug("Default cache key generated: #{generated_key}") if config.cache_debug
+      generated_key
+    end
+
+    def log_cache_debug(message)
+      Rails.logger.debug("[OasRails Cache] #{message}") if defined?(Rails.logger)
     end
   end
 end

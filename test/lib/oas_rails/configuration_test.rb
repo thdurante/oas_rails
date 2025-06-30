@@ -18,6 +18,18 @@ module OasRails
       assert_equal "Hash{ status: !Integer, error: String }", @config.response_body_of_default
       assert_equal :rails, @config.rapidoc_theme
       assert_equal :all, @config.include_mode
+      assert_equal false, @config.layout
+      assert_equal :namespace, @config.default_tags_from
+      assert_equal nil, @config.security_schema
+      assert_equal({}, @config.security_schemas)
+      assert_equal true, @config.set_default_responses
+      assert_equal [:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_entity], @config.possible_default_responses
+      assert_equal false, @config.use_model_names
+      assert_equal false, @config.enable_caching
+      assert_equal 1.hour, @config.cache_ttl
+      assert_equal :rails_cache, @config.cache_store
+      assert_nil @config.cache_key_generator
+      assert_equal false, @config.cache_debug
     end
 
     test "sets and gets servers with array" do
@@ -315,6 +327,80 @@ module OasRails
       info = OasRails::Spec::Info.new
       info.favicon = '/path/to/favicon.png'
       assert_equal '/path/to/favicon.png', info.favicon
+    end
+
+    test "enable_caching can be set" do
+      @config.enable_caching = true
+      assert_equal true, @config.enable_caching
+    end
+
+    test "cache_ttl can be set" do
+      @config.cache_ttl = 30.minutes
+      assert_equal 30.minutes, @config.cache_ttl
+    end
+
+    test "cache_store can be set" do
+      @config.cache_store = :memory
+      assert_equal :memory, @config.cache_store
+    end
+
+    test "security_schema setter" do
+      @config.security_schema = :bearer
+
+      assert_equal({ bearer: { type: "http", scheme: "bearer", description: "A bearer token that will be supplied within an `Authorization` header as `bearer <token>`." } }, @config.security_schemas)
+    end
+
+    test "servers setting via array" do
+      servers = [
+        { url: "http://test.com", description: "test server" }
+      ]
+      @config.servers = servers
+
+      result = @config.servers
+
+      assert_equal "http://test.com", result.first.url
+      assert_equal "test server", result.first.description
+    end
+
+    test "servers setting via proc" do
+      @config.servers = -> { [{ url: "http://dynamic.com", description: "dynamic server" }] }
+
+      result = @config.servers
+
+      assert_equal "http://dynamic.com", result.first.url
+      assert_equal "dynamic server", result.first.description
+    end
+
+    test "response_body_default_setter" do
+      valid_type = "Hash{ message: String }"
+      @config.response_body_of_default = valid_type
+      assert_equal valid_type, @config.response_body_of_default
+
+      assert_raises(ArgumentError) do
+        @config.response_body_of_default = 123
+      end
+    end
+
+    test "response_body_of_not_found" do
+      valid_type = "Hash{ error: String }"
+      @config.response_body_of_not_found = valid_type
+      assert_equal valid_type, @config.response_body_of_not_found
+    end
+
+    test "cache_store can be set to memory" do
+      @config.cache_store = :memory
+      assert_equal :memory, @config.cache_store
+    end
+
+    test "cache_key_generator can be set" do
+      generator = ->(request, config) { "test_#{request&.host}" }
+      @config.cache_key_generator = generator
+      assert_equal generator, @config.cache_key_generator
+    end
+
+    test "cache_debug can be set" do
+      @config.cache_debug = true
+      assert_equal true, @config.cache_debug
     end
   end
 end

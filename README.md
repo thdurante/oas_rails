@@ -57,6 +57,68 @@ The goal is to minimize the effort required to create comprehensive documentatio
 
 For see how to install, configure and use OasRails please refere to the [OasRailsBook](http://a-chacon.com/oas_rails)
 
+## Configuration
+
+### Caching
+
+OasRails supports caching of the OpenAPI specification to improve performance, especially useful for applications with many routes or complex specifications.
+
+```ruby
+# config/initializers/oas_rails.rb
+OasRails.configure do |config|
+  # Enable caching (default: false)
+  config.enable_caching = true
+  
+  # Cache Time-To-Live - how long the cache is valid (default: 1.hour)
+  config.cache_ttl = 30.minutes
+  
+  # Cache store type (default: :rails_cache)
+  # Options: :rails_cache (uses Rails.cache), :memory (in-memory cache)
+  config.cache_store = :rails_cache
+  
+  # Custom cache key generator (optional)
+  # Provide a proc that receives (request, config) and returns a cache key
+  config.cache_key_generator = ->(request, config) {
+    "my_app_oas_#{request&.subdomain || 'main'}_#{Rails.env}_#{config.include_mode}"
+  }
+  
+  # Enable cache debugging (default: false)
+  # Logs cache operations to Rails logger for troubleshooting
+  config.cache_debug = true
+end
+```
+
+#### Cache Management
+
+When caching is enabled, you can manage the cache through API endpoints or programmatically:
+
+**API Endpoints:**
+- `GET /your-oas-path/cache/status.json` - Check cache status and configuration
+- `DELETE /your-oas-path/cache.json` - Clear cache
+- `POST /your-oas-path/cache/clear.json` - Clear cache
+
+**Programmatic:**
+```ruby
+# Clear cache programmatically
+OasRails.clear_cache!
+
+# Check if specification is cached
+OasRails.cached?
+```
+
+#### Cache Debugging
+
+Enable `cache_debug` to see cache operations in your Rails logs:
+
+```
+[OasRails Cache] Attempting to fetch from cache with key: my_app_oas_main_development_all
+[OasRails Cache] Rails cache MISS for key: my_app_oas_main_development_all
+[OasRails Cache] Storing in cache with key: my_app_oas_main_development_all, TTL: 1800
+[OasRails Cache] Rails cache write SUCCESS for key: my_app_oas_main_development_all
+```
+
+The cache is automatically invalidated in development environment (unless caching is explicitly enabled) but persists in production until it expires or is manually cleared.
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**. If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement". Don't forget to give the project a star⭐! Thanks again!
