@@ -152,39 +152,16 @@ OasRails.configure do |config|
   # Default: 1.hour
   # config.cache_ttl = 30.minutes
 
-  # Cache store type - where to store the cached specification
-  # Options: :rails_cache (uses Rails.cache), :memory (in-memory cache)
-  # Default: :rails_cache
-  # config.cache_store = :rails_cache
-
-  # Custom cache key generator - provide a proc to generate custom cache keys
-  # The proc receives (request, config) as parameters
-  # Default: nil (uses built-in key generation)
+  # Cache key generator - REQUIRED when caching is enabled
+  # Provide a proc that generates cache keys based on request and config
+  # The proc receives (request, config) as parameters and must return a string
   # config.cache_key_generator = ->(request, config) {
-  #   "my_app_oas_#{request&.subdomain || 'main'}_#{Rails.env}_#{config.include_mode}"
+  #   "my_app_oas_#{request&.host || 'default'}_#{Rails.env}_#{config.include_mode}"
   # }
 
   # Enable cache debugging - logs cache operations to Rails logger
   # Default: false
   # config.cache_debug = true
-
-  # MemCache configuration - required for clearing MemCacheStore cache
-  # Provide memcache connection details when using ActiveSupport::Cache::MemCacheStore
-  # This can be a hash or a proc that returns a hash
-  # config.memcache_config = {
-  #   host: "cache.labs.k.io",
-  #   namespace: "deploy",
-  #   pool_size: 5
-  # }
-  #
-  # Or as a proc for dynamic configuration:
-  # config.memcache_config = -> {
-  #   {
-  #     host: ENV['MEMCACHE_HOST'] || 'localhost:11211',
-  #     namespace: "#{Rails.env}_oas_rails",
-  #     pool_size: 5
-  #   }
-  # }
 
   # NOTE: When caching is enabled, you can:
   # - Check cache status: GET /your-oas-path/cache/status.json

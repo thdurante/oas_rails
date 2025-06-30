@@ -72,14 +72,10 @@ OasRails.configure do |config|
   # Cache Time-To-Live - how long the cache is valid (default: 1.hour)
   config.cache_ttl = 30.minutes
   
-  # Cache store type (default: :rails_cache)
-  # Options: :rails_cache (uses Rails.cache), :memory (in-memory cache)
-  config.cache_store = :rails_cache
-  
-  # Custom cache key generator (optional)
+  # Cache key generator - REQUIRED when caching is enabled
   # Provide a proc that receives (request, config) and returns a cache key
   config.cache_key_generator = ->(request, config) {
-    "my_app_oas_#{request&.subdomain || 'main'}_#{Rails.env}_#{config.include_mode}"
+    "my_app_oas_#{request&.host || 'default'}_#{Rails.env}_#{config.include_mode}"
   }
   
   # Enable cache debugging (default: false)
@@ -87,6 +83,8 @@ OasRails.configure do |config|
   config.cache_debug = true
 end
 ```
+
+**Important**: When `enable_caching` is `true`, you **must** provide a `cache_key_generator`. The gem will raise an `ArgumentError` if the cache key generator is missing.
 
 #### Cache Management
 
@@ -111,10 +109,11 @@ OasRails.cached?
 Enable `cache_debug` to see cache operations in your Rails logs:
 
 ```
-[OasRails Cache] Attempting to fetch from cache with key: my_app_oas_main_development_all
-[OasRails Cache] Rails cache MISS for key: my_app_oas_main_development_all
-[OasRails Cache] Storing in cache with key: my_app_oas_main_development_all, TTL: 1800
-[OasRails Cache] Rails cache write SUCCESS for key: my_app_oas_main_development_all
+[OasRails Cache] Cache key generated: my_app_oas_default_development_all
+[OasRails Cache] Cache MISS for key: my_app_oas_default_development_all
+[OasRails Cache] Storing in cache with key: my_app_oas_default_development_all, TTL: 1800
+[OasRails Cache] Cache write SUCCESS for key: my_app_oas_default_development_all
+[OasRails Cache] Cache cleared for key: my_app_oas_default_development_all - SUCCESS
 ```
 
 The cache is automatically invalidated in development environment (unless caching is explicitly enabled) but persists in production until it expires or is manually cleared.

@@ -27,7 +27,6 @@ module OasRails
       assert_equal false, @config.use_model_names
       assert_equal false, @config.enable_caching
       assert_equal 1.hour, @config.cache_ttl
-      assert_equal :rails_cache, @config.cache_store
       assert_nil @config.cache_key_generator
       assert_equal false, @config.cache_debug
     end
@@ -339,11 +338,6 @@ module OasRails
       assert_equal 30.minutes, @config.cache_ttl
     end
 
-    test "cache_store can be set" do
-      @config.cache_store = :memory
-      assert_equal :memory, @config.cache_store
-    end
-
     test "security_schema setter" do
       @config.security_schema = :bearer
 
@@ -385,11 +379,6 @@ module OasRails
       valid_type = "Hash{ error: String }"
       @config.response_body_of_not_found = valid_type
       assert_equal valid_type, @config.response_body_of_not_found
-    end
-
-    test "cache_store can be set to memory" do
-      @config.cache_store = :memory
-      assert_equal :memory, @config.cache_store
     end
 
     test "cache_key_generator can be set" do

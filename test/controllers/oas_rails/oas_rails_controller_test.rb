@@ -10,7 +10,6 @@ module OasRails
       # Store original cache configuration
       @original_cache_store = Rails.cache
       @original_perform_caching = Rails.application.config.action_controller.perform_caching
-      @original_oas_cache_store = OasRails.config.cache_store
 
       # Enable caching for testing
       Rails.application.config.action_controller.perform_caching = true
@@ -19,7 +18,6 @@ module OasRails
       # Reset caching configuration to defaults
       OasRails.config.enable_caching = false
       OasRails.config.cache_ttl = 1.hour
-      OasRails.config.cache_store = :rails_cache
       OasRails.clear_cache!
     end
 
@@ -27,7 +25,6 @@ module OasRails
       # Restore original cache configuration
       Rails.cache = @original_cache_store
       Rails.application.config.action_controller.perform_caching = @original_perform_caching
-      OasRails.config.cache_store = @original_oas_cache_store
 
       # Clean up after tests
       OasRails.config.enable_caching = false
@@ -60,14 +57,14 @@ module OasRails
 
       json_response = JSON.parse(response.body)
       assert_equal false, json_response["caching_enabled"]
-      assert_equal "rails_cache", json_response["cache_store"] # This should be the config default
       assert_equal false, json_response["is_cached"]
-      assert_includes json_response, "cache_key"
+      # cache_key should not be included when caching is disabled
+      refute_includes json_response, "cache_key"
     end
 
     test "should get cache status with caching enabled" do
       OasRails.config.enable_caching = true
-      OasRails.config.cache_store = :memory
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
       OasRails.config.cache_ttl = 30.minutes
 
       get "/docs/cache/status", as: :json
@@ -75,7 +72,6 @@ module OasRails
 
       json_response = JSON.parse(response.body)
       assert_equal true, json_response["caching_enabled"]
-      assert_equal "memory", json_response["cache_store"]
       # The cache might not be populated yet since we haven't made a request to build the spec
       assert_includes [true, false], json_response["is_cached"]
       assert_equal 1800, json_response["cache_ttl"]
@@ -94,6 +90,7 @@ module OasRails
 
     test "should clear cache via DELETE" do
       OasRails.config.enable_caching = true
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
 
       # Build spec to populate cache
       OasRails.build
@@ -111,6 +108,7 @@ module OasRails
 
     test "should clear cache via POST" do
       OasRails.config.enable_caching = true
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
 
       # Build spec to populate cache
       OasRails.build

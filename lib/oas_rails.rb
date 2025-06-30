@@ -95,22 +95,12 @@ module OasRails
 
     # Clear the OpenAPI specification cache
     def clear_cache!
-      case config.cache_store
-      when :rails_cache
-        if Rails.cache.respond_to?(:delete_matched)
-          Rails.cache.delete_matched("oas_rails_spec_*")
-        elsif config.memcache_config && Rails.cache.is_a?(ActiveSupport::Cache::MemCacheStore)
-          clear_memcache_namespace
-        else
-          raise NotImplementedError, 
-            "Cache store #{Rails.cache.class} does not support pattern-based cache clearing. " \
-            "For MemCacheStore, provide memcache_config in your OasRails configuration, " \
-            "or consider using a cache store that supports delete_matched (like RedisCacheStore or FileStore), " \
-            "or rely on TTL-based cache expiration instead of manual clearing."
-        end
-      when :memory
-        @memory_cache&.clear
-      end
+      return unless config.enable_caching
+
+      # Delete the specific cache key - let the host app decide what cache key to use
+      cache_key = generate_cache_key(nil)
+      success = Rails.cache.delete(cache_key)
+      log_cache_debug("Cache cleared for key: #{cache_key} - #{success ? 'SUCCESS' : 'NOT FOUND'}") if config.cache_debug
     end
 
     # Check if specification is cached
@@ -118,24 +108,7 @@ module OasRails
       return false unless config.enable_caching
 
       cache_key = generate_cache_key(request)
-      case config.cache_store
-      when :rails_cache
-        Rails.cache.exist?(cache_key)
-      when :memory
-        @memory_cache ||= {}
-        cached_data = @memory_cache[cache_key]
-        return false unless cached_data
-
-        # Check if cache has expired
-        if cached_data[:expires_at] <= Time.current
-          @memory_cache.delete(cache_key)
-          return false
-        end
-
-        true
-      else
-        false
-      end
+      Rails.cache.exist?(cache_key)
     end
 
     def configure_yard!
@@ -163,106 +136,33 @@ module OasRails
       cache_key = generate_cache_key(request)
       log_cache_debug("Attempting to fetch from cache with key: #{cache_key}") if config.cache_debug
 
-      case config.cache_store
-      when :rails_cache
-        result = Rails.cache.read(cache_key)
-        log_cache_debug("Rails cache #{result ? 'HIT' : 'MISS'} for key: #{cache_key}") if config.cache_debug
-        result
-      when :memory
-        @memory_cache ||= {}
-        cached_data = @memory_cache[cache_key]
-        return nil unless cached_data
-
-        # Check if cache has expired
-        if cached_data[:expires_at] <= Time.current
-          @memory_cache.delete(cache_key)
-          log_cache_debug("Memory cache EXPIRED for key: #{cache_key}") if config.cache_debug
-          return nil
-        end
-
-        log_cache_debug("Memory cache HIT for key: #{cache_key}") if config.cache_debug
-        cached_data[:data]
-      end
+      result = Rails.cache.read(cache_key)
+      log_cache_debug("Cache #{result ? 'HIT' : 'MISS'} for key: #{cache_key}") if config.cache_debug
+      result
     end
 
     def store_in_cache(spec, request)
       cache_key = generate_cache_key(request)
       log_cache_debug("Storing in cache with key: #{cache_key}, TTL: #{config.cache_ttl}") if config.cache_debug
 
-      case config.cache_store
-      when :rails_cache
-        success = Rails.cache.write(cache_key, spec, expires_in: config.cache_ttl)
-        log_cache_debug("Rails cache write #{success ? 'SUCCESS' : 'FAILED'} for key: #{cache_key}") if config.cache_debug
-      when :memory
-        @memory_cache ||= {}
-        @memory_cache[cache_key] = {
-          data: spec,
-          expires_at: Time.current + config.cache_ttl
-        }
-        log_cache_debug("Memory cache write SUCCESS for key: #{cache_key}") if config.cache_debug
+      success = Rails.cache.write(cache_key, spec, expires_in: config.cache_ttl)
+      if success
+        log_cache_debug("Cache write SUCCESS for key: #{cache_key}") if config.cache_debug
+      elsif config.cache_debug
+        log_cache_debug("Cache write FAILED for key: #{cache_key}")
       end
     end
 
     def generate_cache_key(request)
-      # Use custom cache key generator if provided
-      if config.cache_key_generator.respond_to?(:call)
-        custom_key = config.cache_key_generator.call(request, config)
-        log_cache_debug("Custom cache key generated: #{custom_key}") if config.cache_debug
-        return custom_key
+      # Cache key generator is required when caching is enabled
+      unless config.cache_key_generator.respond_to?(:call)
+        raise ArgumentError, "cache_key_generator must be provided when caching is enabled. " \
+                             "Set config.cache_key_generator to a proc that returns a cache key."
       end
-      
-      # Generate a cache key based on configuration that affects the spec
-      key_components = [
-        "oas_rails_spec",
-        config.api_path,
-        config.include_mode,
-        config.ignored_actions.sort.join(","),
-        Rails.env,
-        # Include request host if available for server-specific caching
-        request&.host || "default"
-      ]
-      generated_key = key_components.join("_").gsub(/[^a-zA-Z0-9_-]/, "_")
-      log_cache_debug("Default cache key generated: #{generated_key}") if config.cache_debug
-      generated_key
-    end
 
-    def clear_memcache_namespace
-      memcache_options = if config.memcache_config.respond_to?(:call)
-                           config.memcache_config.call
-                         else
-                           config.memcache_config
-                         end
-
-      return unless memcache_options.is_a?(Hash)
-
-      begin
-        require 'dalli'
-        
-        # Create a direct connection to memcache using the provided configuration
-        client = Dalli::Client.new(
-          memcache_options[:host],
-          memcache_options
-        )
-
-        # If a namespace is provided, we can flush the entire namespace
-        if memcache_options[:namespace]
-          # Flush all keys in the namespace by incrementing the namespace version
-          # This is the standard way to "flush" a namespace in memcache
-          namespace_key = "#{memcache_options[:namespace]}:version"
-          current_version = client.get(namespace_key) || 0
-          client.set(namespace_key, current_version + 1)
-          log_cache_debug("MemCache namespace '#{memcache_options[:namespace]}' cleared by incrementing version to #{current_version + 1}") if config.cache_debug
-        else
-          log_cache_debug("Warning: No namespace provided in memcache_config. Cannot clear cache efficiently.") if config.cache_debug
-        end
-
-        client.close
-      rescue LoadError
-        raise LoadError, "The 'dalli' gem is required to clear MemCacheStore cache. Add 'gem \"dalli\"' to your Gemfile."
-      rescue => e
-        log_cache_debug("Failed to clear MemCache: #{e.message}") if config.cache_debug
-        raise e
-      end
+      cache_key = config.cache_key_generator.call(request, config)
+      log_cache_debug("Cache key generated: #{cache_key}") if config.cache_debug
+      cache_key
     end
 
     def log_cache_debug(message)

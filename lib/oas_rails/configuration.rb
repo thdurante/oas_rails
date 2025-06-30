@@ -16,10 +16,8 @@ module OasRails
                   :rapidoc_theme,
                   :enable_caching,
                   :cache_ttl,
-                  :cache_store,
                   :cache_key_generator,
-                  :cache_debug,
-                  :memcache_config
+                  :cache_debug
 
     attr_reader :tags, :security_schema, :include_mode, :response_body_of_default
 
@@ -46,10 +44,8 @@ module OasRails
       @include_mode = :all
       @enable_caching = false
       @cache_ttl = 1.hour
-      @cache_store = :rails_cache
       @cache_key_generator = nil
       @cache_debug = false
-      @memcache_config = nil
 
       @possible_default_responses.each do |response|
         method_name = "response_body_of_#{response}="

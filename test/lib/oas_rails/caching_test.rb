@@ -14,7 +14,6 @@ module OasRails
       # Reset caching configuration to defaults
       OasRails.config.enable_caching = false
       OasRails.config.cache_ttl = 1.hour
-      OasRails.config.cache_store = :rails_cache
       OasRails.config.cache_key_generator = nil
       OasRails.config.cache_debug = false
       OasRails.clear_cache!
@@ -49,23 +48,9 @@ module OasRails
       assert_kind_of Hash, spec2
     end
 
-    def test_build_with_rails_cache_enabled
+    def test_build_with_caching_enabled
       OasRails.config.enable_caching = true
-      OasRails.config.cache_store = :rails_cache
-
-      # First build should cache the result
-      spec1 = OasRails.build
-      assert OasRails.cached?
-
-      # Second build should return cached result
-      spec2 = OasRails.build
-
-      assert_equal spec1, spec2
-    end
-
-    def test_build_with_memory_cache_enabled
-      OasRails.config.enable_caching = true
-      OasRails.config.cache_store = :memory
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
 
       # First build should cache the result
       spec1 = OasRails.build
@@ -78,8 +63,9 @@ module OasRails
     end
 
     def test_cache_key_generation_with_request
-      # Ensure we're using the default cache key generator
-      OasRails.config.cache_key_generator = nil
+      OasRails.config.cache_key_generator = lambda { |request, config|
+        "oas_spec_#{request&.host || 'default'}_#{config.include_mode}"
+      }
 
       request = Minitest::Mock.new
       request.expect(:host, "api.example.com")
@@ -87,14 +73,15 @@ module OasRails
       key1 = OasRails.send(:generate_cache_key, request)
       key2 = OasRails.send(:generate_cache_key, nil)
 
-      assert_includes key1, "api_example_com"
-      assert_includes key2, "default"
+      assert_equal "oas_spec_api.example.com_all", key1
+      assert_equal "oas_spec_default_all", key2
 
       request.verify
     end
 
     def test_clear_cache_functionality
       OasRails.config.enable_caching = true
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
 
       # Build and cache a spec
       OasRails.build
@@ -105,9 +92,9 @@ module OasRails
       refute OasRails.cached?
     end
 
-    def test_cache_expiration_with_memory_store
+    def test_cache_expiration_with_ttl
       OasRails.config.enable_caching = true
-      OasRails.config.cache_store = :memory
+      OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
       OasRails.config.cache_ttl = 1.second
 
       # Build and cache a spec
@@ -126,8 +113,9 @@ module OasRails
     end
 
     def test_different_cache_keys_for_different_configurations
-      # Ensure we're using the default cache key generator
-      OasRails.config.cache_key_generator = nil
+      OasRails.config.cache_key_generator = lambda { |request, config|
+        "oas_spec_#{config.api_path}_#{config.include_mode}"
+      }
       OasRails.config.enable_caching = true
 
       # Build with default config
@@ -138,6 +126,8 @@ module OasRails
       key2 = OasRails.send(:generate_cache_key, nil)
 
       refute_equal key1, key2
+      assert_equal "oas_spec_/_all", key1
+      assert_equal "oas_spec_/api/v1_all", key2
     end
 
     def test_custom_cache_key_generator
@@ -174,50 +164,68 @@ module OasRails
       assert_equal generator, OasRails.config.cache_key_generator
     end
 
-    def test_memcache_config_configuration
-      assert_nil OasRails.config.memcache_config
+    def test_cache_key_generator_is_required_when_caching_enabled
+      OasRails.config.enable_caching = true
+      OasRails.config.cache_key_generator = nil
 
-      # Test with hash configuration
-      memcache_config = {
-        host: "cache.example.com",
-        namespace: "test",
-        pool_size: 5
-      }
-      OasRails.config.memcache_config = memcache_config
-      assert_equal memcache_config, OasRails.config.memcache_config
+      # Should raise error when cache_key_generator is not provided
+      error = assert_raises(ArgumentError) do
+        OasRails.build
+      end
 
-      # Test with proc configuration
-      memcache_proc = -> { { host: "dynamic.cache.com", namespace: "dynamic" } }
-      OasRails.config.memcache_config = memcache_proc
-      assert_equal memcache_proc, OasRails.config.memcache_config
+      assert_includes error.message, "cache_key_generator must be provided when caching is enabled"
     end
 
-    def test_clear_cache_with_unsupported_cache_store_provides_helpful_error
-      # Create a dummy cache class that doesn't support delete_matched
-      unsupported_cache_class = Class.new(ActiveSupport::Cache::Store) do
-        def respond_to?(method_name, include_private = false)
-          return false if method_name == :delete_matched
-
-          super
+    def test_clear_cache_works_with_any_cache_store
+      # Create a custom cache store
+      custom_cache_class = Class.new(ActiveSupport::Cache::Store) do
+        def initialize
+          @data = {}
         end
 
-        def self.name
-          "UnsupportedCacheStore"
+        def read(key, options = nil)
+          @data[key]
+        end
+
+        def write(key, value, options = nil)
+          @data[key] = value
+          true
+        end
+
+        def delete(key, options = nil)
+          !!@data.delete(key)
+        end
+
+        def exist?(key, options = nil)
+          @data.key?(key)
+        end
+
+        def fetch(key, options = nil)
+          if @data.key?(key)
+            @data[key]
+          else
+            value = yield if block_given?
+            @data[key] = value if value
+            value
+          end
         end
       end
 
-      unsupported_cache = unsupported_cache_class.new
+      custom_cache = custom_cache_class.new
 
-      Rails.stub :cache, unsupported_cache do
-        OasRails.config.cache_store = :rails_cache
-        OasRails.config.memcache_config = nil
+      Rails.stub :cache, custom_cache do
+        OasRails.config.enable_caching = true
+        OasRails.config.cache_key_generator = ->(request, config) { "test_cache_key" }
 
-        error = assert_raises(NotImplementedError) do
-          OasRails.clear_cache!
-        end
+        # Build and cache a spec
+        OasRails.build
+        assert OasRails.cached?
 
-        assert_includes error.message, "For MemCacheStore, provide memcache_config"
-        assert_includes error.message, "does not support pattern-based cache clearing"
+        # Clear cache should work with any cache store
+        OasRails.clear_cache!
+
+        # Verify cache was cleared
+        refute OasRails.cached?
       end
     end
   end
