@@ -18,7 +18,8 @@ module OasRails
                   :cache_ttl,
                   :cache_store,
                   :cache_key_generator,
-                  :cache_debug
+                  :cache_debug,
+                  :memcache_config
 
     attr_reader :tags, :security_schema, :include_mode, :response_body_of_default
 
@@ -48,6 +49,7 @@ module OasRails
       @cache_store = :rails_cache
       @cache_key_generator = nil
       @cache_debug = false
+      @memcache_config = nil
 
       @possible_default_responses.each do |response|
         method_name = "response_body_of_#{response}="

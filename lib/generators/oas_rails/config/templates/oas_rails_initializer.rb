@@ -168,6 +168,24 @@ OasRails.configure do |config|
   # Default: false
   # config.cache_debug = true
 
+  # MemCache configuration - required for clearing MemCacheStore cache
+  # Provide memcache connection details when using ActiveSupport::Cache::MemCacheStore
+  # This can be a hash or a proc that returns a hash
+  # config.memcache_config = {
+  #   host: "cache.labs.k.io",
+  #   namespace: "deploy",
+  #   pool_size: 5
+  # }
+  #
+  # Or as a proc for dynamic configuration:
+  # config.memcache_config = -> {
+  #   {
+  #     host: ENV['MEMCACHE_HOST'] || 'localhost:11211',
+  #     namespace: "#{Rails.env}_oas_rails",
+  #     pool_size: 5
+  #   }
+  # }
+
   # NOTE: When caching is enabled, you can:
   # - Check cache status: GET /your-oas-path/cache/status.json
   # - Clear cache: DELETE /your-oas-path/cache.json or POST /your-oas-path/cache/clear.json

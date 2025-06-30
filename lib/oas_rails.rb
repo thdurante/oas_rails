@@ -97,7 +97,17 @@ module OasRails
     def clear_cache!
       case config.cache_store
       when :rails_cache
-        Rails.cache.delete_matched("oas_rails_spec_*") if Rails.cache.respond_to?(:delete_matched)
+        if Rails.cache.respond_to?(:delete_matched)
+          Rails.cache.delete_matched("oas_rails_spec_*")
+        elsif config.memcache_config && Rails.cache.is_a?(ActiveSupport::Cache::MemCacheStore)
+          clear_memcache_namespace
+        else
+          raise NotImplementedError, 
+            "Cache store #{Rails.cache.class} does not support pattern-based cache clearing. " \
+            "For MemCacheStore, provide memcache_config in your OasRails configuration, " \
+            "or consider using a cache store that supports delete_matched (like RedisCacheStore or FileStore), " \
+            "or rely on TTL-based cache expiration instead of manual clearing."
+        end
       when :memory
         @memory_cache&.clear
       end
@@ -214,6 +224,45 @@ module OasRails
       generated_key = key_components.join("_").gsub(/[^a-zA-Z0-9_-]/, "_")
       log_cache_debug("Default cache key generated: #{generated_key}") if config.cache_debug
       generated_key
+    end
+
+    def clear_memcache_namespace
+      memcache_options = if config.memcache_config.respond_to?(:call)
+                           config.memcache_config.call
+                         else
+                           config.memcache_config
+                         end
+
+      return unless memcache_options.is_a?(Hash)
+
+      begin
+        require 'dalli'
+        
+        # Create a direct connection to memcache using the provided configuration
+        client = Dalli::Client.new(
+          memcache_options[:host],
+          memcache_options
+        )
+
+        # If a namespace is provided, we can flush the entire namespace
+        if memcache_options[:namespace]
+          # Flush all keys in the namespace by incrementing the namespace version
+          # This is the standard way to "flush" a namespace in memcache
+          namespace_key = "#{memcache_options[:namespace]}:version"
+          current_version = client.get(namespace_key) || 0
+          client.set(namespace_key, current_version + 1)
+          log_cache_debug("MemCache namespace '#{memcache_options[:namespace]}' cleared by incrementing version to #{current_version + 1}") if config.cache_debug
+        else
+          log_cache_debug("Warning: No namespace provided in memcache_config. Cannot clear cache efficiently.") if config.cache_debug
+        end
+
+        client.close
+      rescue LoadError
+        raise LoadError, "The 'dalli' gem is required to clear MemCacheStore cache. Add 'gem \"dalli\"' to your Gemfile."
+      rescue => e
+        log_cache_debug("Failed to clear MemCache: #{e.message}") if config.cache_debug
+        raise e
+      end
     end
 
     def log_cache_debug(message)

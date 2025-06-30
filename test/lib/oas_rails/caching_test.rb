@@ -173,5 +173,52 @@ module OasRails
       OasRails.config.cache_key_generator = generator
       assert_equal generator, OasRails.config.cache_key_generator
     end
+
+    def test_memcache_config_configuration
+      assert_nil OasRails.config.memcache_config
+
+      # Test with hash configuration
+      memcache_config = {
+        host: "cache.example.com",
+        namespace: "test",
+        pool_size: 5
+      }
+      OasRails.config.memcache_config = memcache_config
+      assert_equal memcache_config, OasRails.config.memcache_config
+
+      # Test with proc configuration
+      memcache_proc = -> { { host: "dynamic.cache.com", namespace: "dynamic" } }
+      OasRails.config.memcache_config = memcache_proc
+      assert_equal memcache_proc, OasRails.config.memcache_config
+    end
+
+    def test_clear_cache_with_unsupported_cache_store_provides_helpful_error
+      # Create a dummy cache class that doesn't support delete_matched
+      unsupported_cache_class = Class.new(ActiveSupport::Cache::Store) do
+        def respond_to?(method_name, include_private = false)
+          return false if method_name == :delete_matched
+
+          super
+        end
+
+        def self.name
+          "UnsupportedCacheStore"
+        end
+      end
+
+      unsupported_cache = unsupported_cache_class.new
+
+      Rails.stub :cache, unsupported_cache do
+        OasRails.config.cache_store = :rails_cache
+        OasRails.config.memcache_config = nil
+
+        error = assert_raises(NotImplementedError) do
+          OasRails.clear_cache!
+        end
+
+        assert_includes error.message, "For MemCacheStore, provide memcache_config"
+        assert_includes error.message, "does not support pattern-based cache clearing"
+      end
+    end
   end
 end
